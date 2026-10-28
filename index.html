@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>NEON VIPER // Arcade Snake</title>
+  <link rel="stylesheet" type="text/css" href="css/style.css" />
+  <link rel="stylesheet" type="text/css" href="css/style.cs" />
+</head>
+<body>
+  <div class="app-wrapper">
+    <!-- Top Arcade HUD Header -->
+    <header class="arcade-header" role="banner">
+      <div class="brand-group">
+        <div class="brand-logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+            <path d="M3 3v5h5" />
+            <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+            <circle cx="12" cy="12" r="2" fill="currentColor" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="brand-title">Neon Viper</h1>
+          <div class="brand-subtitle">
+            <span id="statusDot" class="status-dot"></span>
+            <span id="statusText">READY TO LAUNCH</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scoreboard & Speed HUD -->
+      <div class="hud-metrics" role="region" aria-label="Game Scoreboard">
+        <div class="metric-card highlight">
+          <span class="metric-label">Score</span>
+          <span id="scoreDisplay" class="metric-value" aria-live="polite">0</span>
+        </div>
+        <div class="metric-card best">
+          <span class="metric-label">Best Score</span>
+          <span id="bestScoreDisplay" class="metric-value">0</span>
+        </div>
+        <div class="metric-card speed">
+          <span class="metric-label">Velocity</span>
+          <span id="speedDisplay" class="metric-value">1.0x</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">Length</span>
+          <span id="lengthDisplay" class="metric-value">3</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Arcade Workspace -->
+    <main class="arcade-main">
+      <!-- Left Column: Canvas Stage + Action Bar + Touch D-Pad -->
+      <section class="stage-panel" aria-label="Game Stage">
+        <div id="canvasContainer" class="canvas-container">
+          <div class="canvas-inner">
+            <canvas id="gameCanvas" width="600" height="600" tabindex="0" aria-label="Snake Game Board"></canvas>
+            <div class="scanlines" aria-hidden="true"></div>
+
+            <!-- 1. Start Screen Overlay -->
+            <div id="startOverlay" class="stage-overlay" role="dialog" aria-labelledby="startTitle">
+              <div class="overlay-card">
+                <div class="overlay-badge">Arcade Edition v2.0</div>
+                <h2 id="startTitle" class="overlay-title">NEON VIPER</h2>
+                <p class="overlay-desc">
+                  Harvest cyber-apples to grow your viper and push velocity to the limit. Avoid perimeter walls and your own glowing trail.
+                </p>
+
+                <div class="quick-tips">
+                  <div class="tip-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="2" y="4" width="20" height="16" rx="2" />
+                      <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M10 12h.01M14 12h.01M18 12h.01M7 16h10" />
+                    </svg>
+                    <div class="tip-text">
+                      <strong>Desktop</strong>
+                      WASD or Arrow Keys
+                    </div>
+                  </div>
+                  <div class="tip-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="5" y="2" width="14" height="20" rx="2" />
+                      <line x1="12" y1="18" x2="12.01" y2="18" />
+                    </svg>
+                    <div class="tip-text">
+                      <strong>Mobile / Touch</strong>
+                      Swipe or D-Pad
+                    </div>
+                  </div>
+                </div>
+
+                <button id="overlayStartBtn" type="button" class="btn btn-primary btn-full">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="5 3 19 12 5 21 5 3" />
+                  </svg>
+                  Start Game
+                </button>
+              </div>
+            </div>
+
+            <!-- 2. Pause Screen Overlay -->
+            <div id="pauseOverlay" class="stage-overlay hidden" role="dialog" aria-labelledby="pauseTitle">
+              <div class="overlay-card">
+                <div class="overlay-badge">System Paused</div>
+                <h2 id="pauseTitle" class="overlay-title">GAME PAUSED</h2>
+                <p class="overlay-desc">
+                  Your cyber-viper is suspended in stasis. Ready to jump back into the grid?
+                </p>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                  <button id="overlayResumeBtn" type="button" class="btn btn-primary btn-full">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                      <polygon points="5 3 19 12 5 21 5 3" />
+                    </svg>
+                    Resume Game
+                  </button>
+                  <button id="overlayPauseRestartBtn" type="button" class="btn btn-full">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                      <path d="M3 3v5h5" />
+                    </svg>
+                    Restart Run
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3. Game Over Screen Overlay -->
+            <div id="gameOverOverlay" class="stage-overlay hidden" role="dialog" aria-labelledby="gameOverTitle">
+              <div class="overlay-card">
+                <div id="gameOverBadge" class="overlay-badge danger">Collision Detected</div>
+                <h2 id="gameOverTitle" class="overlay-title">GAME OVER</h2>
+                <p id="gameOverReason" class="overlay-desc">
+                  Your viper collided with the perimeter barrier.
+                </p>
+
+                <div class="summary-grid">
+                  <div class="summary-item">
+                    <div class="label">Final Score</div>
+                    <div id="finalScoreVal" class="val">0</div>
+                  </div>
+                  <div class="summary-item">
+                    <div class="label">Best Score</div>
+                    <div id="finalBestVal" class="val" style="color: var(--color-warning);">0</div>
+                  </div>
+                  <div class="summary-item">
+                    <div class="label">Apples Eaten</div>
+                    <div id="finalApplesVal" class="val" style="color: var(--color-success);">0</div>
+                  </div>
+                  <div class="summary-item">
+                    <div class="label">Peak Velocity</div>
+                    <div id="finalSpeedVal" class="val" style="color: var(--color-info);">1.0x</div>
+                  </div>
+                </div>
+
+                <button id="overlayRestartBtn" type="button" class="btn btn-accent btn-full">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                    <path d="M3 3v5h5" />
+                  </svg>
+                  Play Again
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Primary Action Buttons Bar (Start, Pause/Resume, Restart, Audio) -->
+        <div class="control-bar" role="toolbar" aria-label="Game Controls">
+          <div class="btn-group">
+            <button id="startBtn" type="button" class="btn btn-primary">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <polygon points="5 3 19 12 5 21 5 3" />
+              </svg>
+              <span>Start</span>
+            </button>
+
+            <button id="pauseBtn" type="button" class="btn" disabled>
+              <svg id="pauseIcon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <rect x="6" y="4" width="4" height="16" rx="1" />
+                <rect x="14" y="4" width="4" height="16" rx="1" />
+              </svg>
+              <span id="pauseBtnLabel">Pause</span>
+            </button>
+
+            <button id="restartBtn" type="button" class="btn" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                <path d="M3 3v5h5" />
+              </svg>
+              <span>Restart</span>
+            </button>
+          </div>
+
+          <button id="soundBtn" type="button" class="btn btn-icon-only" aria-label="Toggle Sound Effects" aria-pressed="true" title="Mute / Unmute Sound (M)">
+            <svg id="soundOnIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+            </svg>
+            <svg id="soundOffIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+              <line x1="23" y1="9" x2="17" y2="15" />
+              <line x1="17" y1="9" x2="23" y2="15" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Responsive Touch D-Pad for Mobile / Tablet & Quick Click -->
+        <div class="touch-controls-wrapper" aria-label="Directional Pad Controls">
+          <div class="dpad-grid">
+            <button type="button" class="dpad-btn dpad-up" data-dir="UP" aria-label="Move Up">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="18 15 12 9 6 15" />
+              </svg>
+            </button>
+            <button type="button" class="dpad-btn dpad-left" data-dir="LEFT" aria-label="Move Left">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
+            <button type="button" class="dpad-btn dpad-down" data-dir="DOWN" aria-label="Move Down">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+            <button type="button" class="dpad-btn dpad-right" data-dir="RIGHT" aria-label="Move Right">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
+          </div>
+          <span class="touch-hint">Tip: Press WASD / Arrow Keys, swipe the arena, or tap the D-Pad</span>
+        </div>
+      </section>
+
+      <!-- Right Column: Telemetry, Keybindings & Instructions -->
+      <aside class="sidebar-panel" aria-label="Instructions and Telemetry">
+        <!-- Velocity Progression Card -->
+        <div class="info-card">
+          <div class="info-card-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            </svg>
+            <span>Hyper-Drive Telemetry</span>
+          </div>
+          <div class="speed-meter">
+            <div class="speed-row">
+              <span>Speed Level</span>
+              <span id="levelDisplay" style="color: var(--color-info); font-weight: 800;">LVL 1</span>
+            </div>
+            <div class="speed-bar-track" aria-hidden="true">
+              <div id="speedBarFill" class="speed-bar-fill"></div>
+            </div>
+            <div class="speed-row" style="color: var(--color-muted-foreground); font-size: 0.7rem;">
+              <span>Base: 1.0x</span>
+              <span>Max Overdrive: 2.8x</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Controls Card -->
+        <div class="info-card">
+          <div class="info-card-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <circle cx="12" cy="12" r="10" />
+              <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
+            </svg>
+            <span>Control Matrix</span>
+          </div>
+          <ul class="keybind-list">
+            <li class="keybind-item">
+              <span>Move Up</span>
+              <span class="kbd-group"><kbd data-dir="UP">W</kbd><kbd data-dir="UP">&uarr;</kbd></span>
+            </li>
+            <li class="keybind-item">
+              <span>Move Down</span>
+              <span class="kbd-group"><kbd data-dir="DOWN">S</kbd><kbd data-dir="DOWN">&darr;</kbd></span>
+            </li>
+            <li class="keybind-item">
+              <span>Move Left</span>
+              <span class="kbd-group"><kbd data-dir="LEFT">A</kbd><kbd data-dir="LEFT">&larr;</kbd></span>
+            </li>
+            <li class="keybind-item">
+              <span>Move Right</span>
+              <span class="kbd-group"><kbd data-dir="RIGHT">D</kbd><kbd data-dir="RIGHT">&rarr;</kbd></span>
+            </li>
+            <li class="keybind-item">
+              <span>Pause / Resume</span>
+              <span class="kbd-group"><kbd>SPACE</kbd><kbd>P</kbd></span>
+            </li>
+            <li class="keybind-item">
+              <span>Quick Restart</span>
+              <span class="kbd-group"><kbd>R</kbd></span>
+            </li>
+            <li class="keybind-item">
+              <span>Mute Audio</span>
+              <span class="kbd-group"><kbd>M</kbd></span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Mission Directives / Instructions Card -->
+        <div class="info-card">
+          <div class="info-card-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
+            </svg>
+            <span>Arcade Rules</span>
+          </div>
+          <ul class="rules-list">
+            <li>
+              <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6" /></svg>
+              <span><strong>Eat Cyber-Apples (+10 pts):</strong> Each core extends your viper and accelerates grid speed.</span>
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6" /></svg>
+              <span><strong>Anti-Reversal Lock:</strong> Input buffering prevents accidental 180&deg; self-collisions on rapid turns.</span>
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6" /></svg>
+              <span><strong>Lethal Hazards:</strong> Hitting the outer neon barrier or your own body ends the run.</span>
+            </li>
+          </ul>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script src="js/main.js" defer></script>
+</body>
+</html>
